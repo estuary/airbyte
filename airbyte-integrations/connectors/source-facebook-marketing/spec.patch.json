@@ -46,6 +46,14 @@
               ],
               "airbyte_secret": true
           }
+        },
+        "client_id": {
+          "type": ["string", "null"],
+          "airbyte_secret": true
+        },
+        "client_secret": {
+          "type": ["string", "null"],
+          "airbyte_secret": true
         }
       }, {
         "type": "object",
