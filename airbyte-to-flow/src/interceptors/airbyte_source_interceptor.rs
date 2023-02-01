@@ -26,12 +26,14 @@ use validator::Validate;
 use futures::{stream, StreamExt, TryStreamExt};
 use serde_json::value::RawValue;
 use serde_json as sj;
+use serde_json::json;
 use std::fs::File;
 use std::io::Write;
 use tempfile::{Builder, TempDir};
 
 use json_patch::merge;
 
+use super::airbyte_interval_checkpoint::{AirbyteIntervalCheckpoint, INTERVAL_RUN_KEY};
 use super::fix_document_schema::fix_document_schema_keys;
 use super::remap::remap;
 
@@ -47,6 +49,7 @@ const STREAM_PATCH_DIR_NAME: &str = "streams";
 const STREAM_PK_SUFFIX: &str = ".pk.json";
 const STREAM_PATCH_SUFFIX: &str = ".patch.json";
 const SELECTED_STREAMS_FILE_NAME: &str = "selected_streams.json";
+const RUN_INTERVAL_FILE_NAME: &str = "run_interval.minutes.json";
 
 pub struct AirbyteSourceInterceptor {
     validate_request: Arc<Mutex<Option<ValidateRequest>>>,
@@ -297,6 +300,25 @@ impl AirbyteSourceInterceptor {
                 };
                 if let Some(ref mut o) = request.open {
                     File::create(state_file_path.clone())?.write_all(&o.driver_checkpoint_json)?;
+                    let interval_checkpoint = sj::from_slice::<AirbyteIntervalCheckpoint>(&o.driver_checkpoint_json)?;
+
+                    if let Some(last_run_str) = interval_checkpoint.flow_interval_last_run {
+                        let run_interval_option = std::fs::read_to_string(RUN_INTERVAL_FILE_NAME).ok().map(|p| sj::from_str::<u64>(&p)).transpose()?;
+                        if let Some(ref run_interval) = run_interval_option {
+                            let last_run = chrono::DateTime::parse_from_rfc3339(&last_run_str).unwrap();
+
+                            let now = chrono::Utc::now();
+                            let since = now.signed_duration_since(last_run);
+
+                            let minutes = since.num_minutes() as u64;
+                            if minutes < *run_interval {
+                                let wait_minutes = run_interval - minutes;
+                                tracing::warn!("connector is scheduled to run every {}, waiting for {}", run_interval, wait_minutes);
+                                std::thread::sleep(std::time::Duration::from_secs(wait_minutes * 60));
+                                return Ok(None);
+                            }
+                        }
+                    }
 
                     if let Some(ref mut c) = o.capture {
                         let endpoint_spec_json = AirbyteSourceInterceptor::adapt_endpoint_spec(&c.endpoint_spec_json)?;
@@ -396,8 +418,17 @@ impl AirbyteSourceInterceptor {
 
                 let mut resp = PullResponse::default();
                 if let Some(state) = message.state {
+                    let mut state_json = sj::from_str::<sj::Value>(state.data.get())?;
+                    let interval_run_opt = state_json.as_object_mut();
+                    let now = json!(chrono::Utc::now().to_rfc3339());
+                    if let Some(interval_run) = interval_run_opt {
+                        interval_run.insert(INTERVAL_RUN_KEY.to_string(), now);
+                    } else {
+                        state_json = json!(sj::Map::from_iter(std::iter::once((INTERVAL_RUN_KEY.to_string(), now))));
+                    };
+
                     resp.checkpoint = Some(DriverCheckpoint {
-                        driver_checkpoint_json: state.data.get().as_bytes().to_vec(),
+                        driver_checkpoint_json: sj::to_vec(&state_json)?,
                         rfc7396_merge_patch: state.merge.unwrap_or(false),
                     });
 

@@ -21,6 +21,7 @@ clap = { version = "^3", features = ["derive"] }
 futures = "*"
 futures-core = "*"
 futures-util = "*"
+chrono = "0.4.23"
 prost = "*"
 schemars = "*"
 serde = { version = "*", features = ["derive"]}
