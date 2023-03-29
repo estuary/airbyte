@@ -12,7 +12,8 @@
         "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
         "description": "UTC date and time in the format 2017-01-25T00:00:00Z. Any data before this date will not be replicated.",
         "examples": ["2017-01-25T00:00:00Z"],
-        "title": "Start Date"
+        "title": "Start Date",
+        "format": "date-time"
       },
       "lookback_window": {
         "type": "integer",
@@ -41,10 +42,14 @@
         "title": "Authentication mechanism",
         "description": "Choose how to authenticate into Slack",
         "type": "object",
+        "discriminator": {
+          "propertyName": "option_title"
+        },
         "oneOf": [
           {
             "type": "object",
             "title": "Sign in via Slack (OAuth)",
+            "x-oauth2-provider": "slack",
             "required": [
               "option_title",
               "client_id",
@@ -54,7 +59,8 @@
             "properties": {
               "option_title": {
                 "type": "string",
-                "const": "Default OAuth2.0 authorization"
+                "const": "Default OAuth2.0 authorization",
+                "default": "Default OAuth2.0 authorization"
               },
               "client_id": {
                 "type": "string",
@@ -83,7 +89,8 @@
             "properties": {
               "option_title": {
                 "type": "string",
-                "const": "API Token Credentials"
+                "const": "API Token Credentials",
+                "default": "API Token Credentials"
               },
               "api_token": {
                 "type": "string",

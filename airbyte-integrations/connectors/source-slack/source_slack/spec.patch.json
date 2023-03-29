@@ -1,5 +1,5 @@
 {
-    "documentationUrl": "https://docs.airbyte.com/integrations/sources/slack",
+    "documentationUrl": "https://go.estuary.dev/xcbFGD",
     "connectionSpecification": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Slack Spec",
