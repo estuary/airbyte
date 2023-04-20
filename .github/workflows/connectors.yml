@@ -146,7 +146,14 @@ jobs:
           - name: source-slack
           - name: source-airtable
           - name: source-freshdesk
+<<<<<<< HEAD
           - name: source-recharge
+=======
+          - name: source-marketo
+          - name: source-chargebee
+          - name: source-klaviyo
+          - name: source-snapchat-marketing
+>>>>>>> 59d004578937a1b92b9b86472cbd4b722207b70a
 
     steps:
       - uses: actions/checkout@v2
