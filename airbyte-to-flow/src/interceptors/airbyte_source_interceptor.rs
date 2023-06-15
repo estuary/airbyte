@@ -404,7 +404,7 @@ impl AirbyteSourceInterceptor {
                     catalog.streams.push(ConfiguredStream {
                         sync_mode: resource.sync_mode.clone(),
                         destination_sync_mode: DestinationSyncMode::Append,
-                        cursor_field: resource.cursor_field,
+                        cursor_field: resource.cursor_field.clone(),
                         primary_key: Some(primary_key),
                         stream: airbyte_catalog::Stream {
                             name: resource.stream,
@@ -413,7 +413,7 @@ impl AirbyteSourceInterceptor {
                                 collection.write_schema_json.clone(),
                             )?,
                             supported_sync_modes: Some(vec![resource.sync_mode.clone()]),
-                            default_cursor_field: None,
+                            default_cursor_field: resource.cursor_field,
                             source_defined_cursor: None,
                             source_defined_primary_key: None,
                         },
