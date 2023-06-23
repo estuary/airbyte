@@ -187,6 +187,7 @@ impl AirbyteSourceInterceptor {
             for stream in catalog.streams {
                 if let Some(ref selected_streams) = selected_streams_option {
                     if !selected_streams.contains(&stream.name) {
+                        eprintln!("ignoring stream {}", stream.name);
                         continue;
                     }
                 }
