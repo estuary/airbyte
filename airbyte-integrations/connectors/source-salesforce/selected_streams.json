@@ -20,6 +20,5 @@
 "UserServicePresence",
 "WorkOrder",
 "WorkOrderLineItem",
-"Internal_Users__c",
-"Internal_Users"
+"Internal_User__c"
 ]
