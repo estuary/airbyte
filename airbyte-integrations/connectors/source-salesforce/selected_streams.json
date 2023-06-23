@@ -19,5 +19,7 @@
 "Task",
 "UserServicePresence",
 "WorkOrder",
-"WorkOrderLineItem"
+"WorkOrderLineItem",
+"Internal_Users__c",
+"Internal_Users"
 ]
