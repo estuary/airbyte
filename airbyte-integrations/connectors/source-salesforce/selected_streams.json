@@ -19,5 +19,10 @@
 "Task",
 "UserServicePresence",
 "WorkOrder",
-"WorkOrderLineItem"
+"WorkOrderLineItem",
+"OpportunityContactRole",
+"OpportunityLineItem",
+"Pricebook2",
+"PricebookEntry",
+"Product2"
 ]
