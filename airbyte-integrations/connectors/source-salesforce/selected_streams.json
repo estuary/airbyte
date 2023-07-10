@@ -19,5 +19,6 @@
 "Task",
 "UserServicePresence",
 "WorkOrder",
-"WorkOrderLineItem"
+"WorkOrderLineItem",
+"Applicant__c"
 ]
