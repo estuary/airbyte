@@ -24,5 +24,6 @@
 "OpportunityLineItem",
 "Pricebook2",
 "PricebookEntry",
-"Product2"
+"Product2",
+"INTERNAL_USER__C"
 ]
