@@ -94,7 +94,6 @@
             },
             "client_certificate": {
               "airbyte_secret": true,
-              "always_show": true,
               "description": "Client certificate",
               "multiline": true,
               "order": 2,
@@ -103,7 +102,6 @@
             },
             "client_key": {
               "airbyte_secret": true,
-              "always_show": true,
               "description": "Client key",
               "multiline": true,
               "order": 3,
@@ -143,7 +141,6 @@
             },
             "client_certificate": {
               "airbyte_secret": true,
-              "always_show": true,
               "description": "Client certificate",
               "multiline": true,
               "order": 2,
@@ -152,7 +149,6 @@
             },
             "client_key": {
               "airbyte_secret": true,
-              "always_show": true,
               "description": "Client key",
               "multiline": true,
               "order": 3,
