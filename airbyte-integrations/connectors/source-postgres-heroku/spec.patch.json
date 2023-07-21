@@ -6,12 +6,12 @@
       "properties": {
         "method": {
           "type": "string",
-          "default": "Standard",
-          "const": "Standard"
+          "default": "Xmin",
+          "const": "Xmin"
         }
       },
       "default": {
-        "method": "Standard"
+        "method": "Xmin"
       }
     },
     "jdbc_url_params": {
