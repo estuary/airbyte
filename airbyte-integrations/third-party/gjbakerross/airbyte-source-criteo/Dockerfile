@@ -4,7 +4,8 @@ FROM ghcr.io/estuary/airbyte-to-flow:$AIRBYTE_TO_FLOW_TAG as airbyte-to-flow
 FROM ghcr.io/estuary/gjbakerross/source-criteo:dev
 
 COPY *.json ./
-# COPY streams/* ./streams/
+RUN mkdir -p ./streams
+COPY streams/* ./streams
 
 COPY --from=airbyte-to-flow /airbyte-to-flow ./
 ENTRYPOINT ["/airbyte/integration_code/airbyte-to-flow", "--connector-entrypoint", "python /airbyte/integration_code/main.py"]
