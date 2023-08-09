@@ -25,5 +25,8 @@
 "Pricebook2",
 "PricebookEntry",
 "Product2",
-"INTERNAL_USER__C"
+"INTERNAL_USER__C",
+"ContentNote",
+"ContentDocumentLink",
+"Event"
 ]
