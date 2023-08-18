@@ -1,0 +1,17 @@
+{
+    "properties": {
+        "payment_method_details": {
+            "properties": {
+                "au_becs_debit":{
+                    "additional_properties": null
+                },
+                "bacs_debit":{
+                    "additional_properties": null
+                },
+                "sepa_debit":{
+                    "additional_properties": null
+                }
+            }
+        }
+    }
+}

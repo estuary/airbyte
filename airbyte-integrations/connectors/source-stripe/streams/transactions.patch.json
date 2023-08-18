@@ -1,0 +1,23 @@
+{
+    "properties": {
+        "amount_details": {
+            "properties": {
+                "atm_fee": {
+                    "type": ["null", "integer"]
+                }
+            },
+            "type": null
+        },
+        "purchase_details": {
+            "fuel": null,
+            "lodging": null,
+            "receipt": null,
+            "reference": null,
+            "properties": {
+                "flight": {
+                    "travel_agency": null
+                }
+            }
+        }
+    }
+}

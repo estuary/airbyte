@@ -1,0 +1,21 @@
+{
+    "properties": {
+        "transactions": {
+            "items": {
+                "properties": {
+                    "purchase_details": {
+                        "fuel": null,
+                        "lodging": null,
+                        "receipt": null,
+                        "reference": null,
+                        "properties": {
+                            "flight": {
+                                "travel_agency": null
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
