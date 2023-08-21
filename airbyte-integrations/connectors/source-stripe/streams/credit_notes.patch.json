@@ -1,6 +1,20 @@
 {
     "properties": {
         "lines": {
+            "properties": {
+                "has_more": {
+                    "type": [
+                        "null",
+                        "boolean"
+                    ]
+                },
+                "url": {
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                }
+            },
             "has_more": null,
             "url": null
         }
