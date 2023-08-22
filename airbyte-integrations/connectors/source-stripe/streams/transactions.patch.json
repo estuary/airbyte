@@ -6,7 +6,10 @@
                     "type": ["null", "integer"]
                 }
             },
-            "type": null
+            "type": [
+                "null",
+                "object"
+            ]
         },
         "purchase_details": {
             "fuel": null,
