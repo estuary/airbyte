@@ -1,18 +1,21 @@
 {
-    "properties": {
-         "publisher_platform": {
-          "type":["string", "null"]
-       },
-       "platform_position": {
-        "type":["string", "null"]
-     },
-     "impression_device": {
-      "type":["string", "null"]
-   }
-     },
-     "required": [
-       "date_start",
-       "account_id",
-       "ad_id" 
-     ]
- }
+  "properties": {
+    "publisher_platform": {
+      "type":["string"]
+    },
+    "platform_position": {
+      "type":["string"]
+    },
+    "impression_device": {
+      "type":["string"]
+    }
+  },
+  "required": [
+    "date_start",
+    "account_id",
+    "ad_id" ,
+    "publisher_platform",
+    "platform_position",
+    "impression_device"
+  ]
+}

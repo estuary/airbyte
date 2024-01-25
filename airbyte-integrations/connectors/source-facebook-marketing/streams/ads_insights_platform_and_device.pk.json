@@ -1,1 +1,1 @@
-["date_start", "account_id", "ad_id"]
+["date_start", "account_id", "ad_id", "publisher_platform", "platform_position", "impression_device"]

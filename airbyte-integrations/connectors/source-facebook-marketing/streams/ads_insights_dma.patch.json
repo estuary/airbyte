@@ -1,12 +1,13 @@
 {
-    "properties": {
-         "dma": {
-          "type":["string", "null"]
-       }
-     },
-     "required": [
-       "date_start",
-       "account_id",
-       "ad_id" 
-     ]
- }
+  "properties": {
+    "dma": {
+      "type":["string"]
+    }
+  },
+  "required": [
+    "date_start",
+    "account_id",
+    "ad_id" ,
+    "dma"
+  ]
+}

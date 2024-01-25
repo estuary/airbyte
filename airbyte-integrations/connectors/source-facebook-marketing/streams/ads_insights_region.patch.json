@@ -1,12 +1,13 @@
 {
-   "properties": {
-        "region": {
-         "type":["string", "null"]
-      }
-    },
-    "required": [
-      "date_start",
-      "account_id",
-      "ad_id" 
-    ]
+  "properties": {
+    "region": {
+      "type":["string"]
+    }
+  },
+  "required": [
+    "date_start",
+    "account_id",
+    "ad_id",
+    "region"
+  ]
 }
