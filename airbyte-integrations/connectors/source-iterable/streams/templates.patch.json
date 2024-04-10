@@ -1,6 +1,6 @@
 {
-    "properties": {
-        "id": {
+    "properties":{
+        "campaignId":{
             "type":"integer"
         }
     },
