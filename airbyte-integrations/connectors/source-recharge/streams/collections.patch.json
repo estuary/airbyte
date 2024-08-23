@@ -1,0 +1,18 @@
+{
+  "properties": {
+      "created_at": {
+      "type": [
+        "null",
+        "string"
+      ],
+        "format": null
+    },
+    "updated_at": {
+      "type": [
+        "null",
+        "string"
+      ],
+        "format": null
+    }
+  }
+}
