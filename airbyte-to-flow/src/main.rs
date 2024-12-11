@@ -1,5 +1,5 @@
 use anyhow::Context;
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 use errors::Error;
 use flow_cli_common::{init_logging, LogArgs, LogLevel};
 
@@ -36,7 +36,14 @@ fn main() -> anyhow::Result<()> {
 
     let log_level = std::env::var("LOG_LEVEL")
         .ok()
-        .and_then(|s| LogLevel::from_str(&s, true).ok())
+        .and_then(|s| match s.as_str() {
+            "trace" => Some(LogLevel::Trace),
+            "debug" => Some(LogLevel::Debug),
+            "info" => Some(LogLevel::Info),
+            "warn" => Some(LogLevel::Warn),
+            "error" => Some(LogLevel::Error),
+            _ => None,
+        })
         .unwrap_or(LogLevel::Info);
     let log_args = LogArgs {
         level: log_level,
@@ -64,7 +71,7 @@ fn main() -> anyhow::Result<()> {
     match result {
         Err(Error::ExitCode(code)) => {
             std::process::exit(code);
-        },
+        }
         Err(err) => Err(err.into()),
         Ok(()) => {
             tracing::debug!(message = "atf exiting");

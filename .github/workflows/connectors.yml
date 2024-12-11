@@ -49,7 +49,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         if: needs.paths-filter.outputs.atf_modified == 'true'
         with:
-          toolchain: nightly-2023-04-16
+          toolchain: stable
           target: x86_64-unknown-linux-musl
           default: true
           override: true
