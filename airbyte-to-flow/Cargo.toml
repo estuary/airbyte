@@ -24,10 +24,10 @@ clap = { version = "^3", features = ["derive"] }
 futures = "*"
 futures-core = "*"
 futures-util = "*"
-prost = "0.12"
+prost = "0.13"
 schemars = "0.8"
-serde = { version = "*", features = ["derive"]}
-serde_json = { version = "*", features = ["raw_value"]}
+serde = { version = "*", features = ["derive"] }
+serde_json = { version = "*", features = ["raw_value"] }
 structopt = "*"
 strum_macros = "*"
 strum = { version = "0.24.1", features = ["derive"] }
