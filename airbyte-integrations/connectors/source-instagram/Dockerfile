@@ -1,7 +1,7 @@
 ARG AIRBYTE_TO_FLOW_TAG="dev"
 FROM ghcr.io/estuary/airbyte-to-flow:$AIRBYTE_TO_FLOW_TAG as airbyte-to-flow
 
-FROM airbyte/source-instagram:1.0.5
+FROM airbyte/source-instagram:3.1.8
 
 COPY --from=airbyte-to-flow /airbyte-to-flow ./
 ENTRYPOINT ["/airbyte/integration_code/airbyte-to-flow", "--connector-entrypoint", "python /airbyte/integration_code/main.py"]
