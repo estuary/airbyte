@@ -52,6 +52,7 @@ const STREAM_PK_SUFFIX: &str = ".pk.json";
 const STREAM_PATCH_SUFFIX: &str = ".patch.json";
 const STREAM_NORMALIZE_SUFFIX: &str = ".normalize.json";
 const SELECTED_STREAMS_FILE_NAME: &str = "selected_streams.json";
+const OMITTED_STREAMS_FILE_NAME: &str = "omitted_streams.json";
 
 // SavedBinding records the binding index and applicable normalizations obtained from a Pull
 // request.
@@ -186,6 +187,11 @@ impl AirbyteSourceInterceptor {
                 .map(|p| sj::from_str::<Vec<String>>(&p))
                 .transpose()?;
 
+            let omitted_streams_option = std::fs::read_to_string(OMITTED_STREAMS_FILE_NAME)
+                .ok()
+                .map(|p| sj::from_str::<Vec<String>>(&p))
+                .transpose()?;
+
             let schema_normalizations = std::fs::read_to_string(SCHEMA_NORMALIZATIONS_FILE_NAME)
                 .ok()
                 .map(|p| sj::from_str::<Vec<String>>(&p))
@@ -194,6 +200,12 @@ impl AirbyteSourceInterceptor {
 
             let mut resp = response::Discovered::default();
             for stream in catalog.streams {
+                if let Some(ref omitted_streams) = omitted_streams_option {
+                    if omitted_streams.contains(&stream.name) {
+                        continue;
+                    }
+                }
+
                 let mut disable = false;
                 if let Some(ref selected_streams) = selected_streams_option {
                     if !selected_streams.contains(&stream.name) {
