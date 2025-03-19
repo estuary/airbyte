@@ -1,5 +1,16 @@
 {
     "properties": {
+            "credited_to": {
+                "type": ["object", "null"],
+                "properties": {
+                    "id": {
+                        "type": ["integer", "null"]
+                    }
+                }
+            },
+            "location": {
+                "type": ["object", "string", "null"]
+            },
             "prospective_department":{
                 "type": ["object", "null"]
             },
@@ -15,6 +26,9 @@
                         "type": ["object", "null"]
                     }
                 }
-        }
+            },
+            "source": {
+                "type": ["object", "null"]
+            }
     }
 }
