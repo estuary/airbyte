@@ -1,6 +1,5 @@
 {
     "properties":{
-        "type": "object",
         "user":{
             "type": ["object", "null"],
             "properties":{
