@@ -1,0 +1,13 @@
+{
+    "properties":{
+        "type": "object",
+        "user":{
+            "type": ["object", "null"],
+            "properties":{
+                "id":{
+                    "type": ["string", "null"]
+                }
+            }
+        }
+    }
+}
