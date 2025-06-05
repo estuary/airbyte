@@ -319,6 +319,7 @@ impl AirbyteSourceInterceptor {
                     document_schema_json: fix_document_schema_keys(doc_schema, key)?.to_string(),
                     disable,
                     resource_path: Vec::new(), // this is deprecated and unused
+                    is_fallback_key: false,
                 })
             }
 
