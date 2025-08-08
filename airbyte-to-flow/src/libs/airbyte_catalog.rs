@@ -40,7 +40,7 @@ pub enum DestinationSyncMode {
 #[serde(rename_all = "snake_case")]
 #[validate(schema(function = "Self::validate_configured_stream"))]
 pub struct ConfiguredStream {
-    #[validate]
+    #[validate(nested)]
     pub stream: Stream,
     pub sync_mode: SyncMode,
     pub destination_sync_mode: DestinationSyncMode,
@@ -71,7 +71,7 @@ impl ConfiguredStream {
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
 pub struct Catalog {
     #[serde(rename = "streams")]
-    #[validate]
+    #[validate(nested)]
     pub streams: Vec<Stream>,
 }
 
@@ -109,11 +109,11 @@ impl Serialize for Range {
 pub struct ConfiguredCatalog {
     #[serde(rename = "streams")]
     #[validate(length(min = 1))]
-    #[validate]
+    #[validate(nested)]
     pub streams: Vec<ConfiguredStream>,
 
     #[serde(rename = "estuary.dev/range")]
-    #[validate]
+    #[validate(nested)]
     pub range: Option<Range>,
 }
 
@@ -246,7 +246,7 @@ pub struct Message {
     pub record: Option<Record>,
     pub connection_status: Option<ConnectionStatus>,
     pub spec: Option<Spec>,
-    #[validate]
+    #[validate(nested)]
     pub catalog: Option<Catalog>,
 }
 
