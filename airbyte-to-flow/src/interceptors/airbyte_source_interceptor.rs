@@ -10,8 +10,7 @@ use crate::libs::command::READY;
 use crate::libs::stream::{get_airbyte_response, get_decoded_message, stream_airbyte_responses};
 
 use bytes::Bytes;
-use proto_flow::capture::{request, response};
-use proto_flow::capture::{Request, Response};
+use proto_flow::capture::{request, response, Request, Response};
 use proto_flow::flow::ConnectorState;
 
 use std::collections::HashMap;
@@ -563,7 +562,7 @@ impl AirbyteSourceInterceptor {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug, Copy)]
 pub enum Operation {
     Spec,
     Discover,
@@ -573,26 +572,34 @@ pub enum Operation {
 }
 
 impl AirbyteSourceInterceptor {
-    // Looks at the first request to determine the operation, and gives back the stream that will
-    // include the first request as well
-    pub async fn first_request(
+    // Reads the next request from a persistent line stream and determines the operation
+    pub async fn next_request_from_lines<S>(
         &mut self,
-        in_stream: InterceptorStream,
-    ) -> Result<(Operation, Request), Error> {
-        let first_req = get_decoded_message::<Request>(in_stream).await?;
+        line_stream: &mut S,
+    ) -> Result<(Operation, Request), Error>
+    where
+        S: futures::Stream<Item = Result<bytes::Bytes, Error>> + Unpin,
+    {
+        use futures::StreamExt;
+        
+        let msg = line_stream
+            .next()
+            .await
+            .ok_or(Error::EmptyStream)??;
+        let req: Request = serde_json::from_slice(&msg)?;
 
-        if first_req.spec.is_some() {
-            Ok((Operation::Spec, first_req))
-        } else if first_req.discover.is_some() {
-            Ok((Operation::Discover, first_req))
-        } else if first_req.validate.is_some() {
-            Ok((Operation::Validate, first_req))
-        } else if first_req.apply.is_some() {
-            Ok((Operation::Apply, first_req))
-        } else if first_req.open.is_some() {
-            Ok((Operation::Capture, first_req))
+        if req.spec.is_some() {
+            Ok((Operation::Spec, req))
+        } else if req.discover.is_some() {
+            Ok((Operation::Discover, req))
+        } else if req.validate.is_some() {
+            Ok((Operation::Validate, req))
+        } else if req.apply.is_some() {
+            Ok((Operation::Apply, req))
+        } else if req.open.is_some() {
+            Ok((Operation::Capture, req))
         } else {
-            Err(Error::UnknownOperation(format!("{:#?}", first_req)))
+            Err(Error::UnknownOperation(format!("{:#?}", req)))
         }
     }
 

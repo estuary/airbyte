@@ -260,6 +260,7 @@ mod test {
                 collection: None,
                 field_config_json_map: BTreeMap::new(),
                 backfill: 7,
+                ..Default::default()
             }],
             last_materialization: None,
             last_version: String::new(),
