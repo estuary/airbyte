@@ -145,7 +145,7 @@ class TestHelpers(unittest.TestCase):
             ]
         )
 
-        actual = Helpers.parse_sheet_and_column_names_from_catalog(catalog)
+        actual = Helpers.parse_sheet_and_column_names_from_catalog(catalog, logger)
 
         expected = {sheet1: sheet1_columns, sheet2: sheet2_columns}
         self.assertEqual(actual, expected)
