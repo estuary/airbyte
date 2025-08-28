@@ -121,11 +121,11 @@ class Helpers(object):
     @staticmethod
     def parse_sheet_and_column_names_from_catalog(catalog: ConfiguredAirbyteCatalog, logger: AirbyteLogger) -> Dict[str, FrozenSet[str]]:
         sheet_to_column_name = {}
-        logger.debug("Parsing sheet and column names from catalog.")
+        logger.info("Parsing sheet and column names from catalog.")
         for configured_stream in catalog.streams:
             stream = configured_stream.stream
             sheet_name = stream.name
-            logger.debug(f"Attempting to parse sheet {sheet_name}. stream: {stream}, stream.json_schema: {stream.json_schema}")
+            logger.info(f"Attempting to parse sheet {sheet_name}. stream: {stream}, stream.json_schema: {stream.json_schema}")
             sheet_to_column_name[sheet_name] = frozenset(stream.json_schema["properties"].keys())
 
         return sheet_to_column_name
