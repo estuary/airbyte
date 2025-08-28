@@ -134,7 +134,7 @@ class GoogleSheetsSource(Source):
     ) -> Generator[AirbyteMessage, None, None]:
         client = GoogleSheetsClient(self.get_credentials(config))
 
-        sheet_to_column_name = Helpers.parse_sheet_and_column_names_from_catalog(catalog)
+        sheet_to_column_name = Helpers.parse_sheet_and_column_names_from_catalog(catalog, logger)
         spreadsheet_id = Helpers.get_spreadsheet_id(config["spreadsheet_id"])
 
         row_batch_size = config.get("row_batch_size", ROW_BATCH_SIZE)
