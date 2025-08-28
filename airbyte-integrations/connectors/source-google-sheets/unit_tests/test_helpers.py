@@ -124,11 +124,11 @@ class TestHelpers(unittest.TestCase):
     def test_parse_sheet_and_column_names_from_catalog(self):
         sheet1 = "soccer_team"
         sheet1_columns = frozenset(["arsenal", "chelsea", "manutd", "liverpool"])
-        sheet1_schema = {"properties": {c: {"type": "string"} for c in sheet1_columns}}
+        sheet1_schema = {"$defs": {"flow://connector-schema": {"properties": {c: {"type": "string"} for c in sheet1_columns}}}}
 
         sheet2 = "basketball_teams"
         sheet2_columns = frozenset(["gsw", "lakers"])
-        sheet2_schema = {"properties": {c: {"type": "string"} for c in sheet2_columns}}
+        sheet2_schema = {"$defs": {"flow://connector-schema": {"properties": {c: {"type": "string"} for c in sheet2_columns}}}}
 
         catalog = ConfiguredAirbyteCatalog(
             streams=[
