@@ -1,0 +1,16 @@
+{
+    "properties":{
+        "schedule_start_time": {
+            "type": "string"
+        },
+        "create_time":{
+            "type": "string"
+        },
+        "schedule_end_time": {
+            "type": "string"
+        },
+        "modify_time": {
+            "type": "string"
+        }
+    }
+}
