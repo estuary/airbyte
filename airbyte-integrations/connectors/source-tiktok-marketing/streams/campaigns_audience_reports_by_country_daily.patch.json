@@ -14,7 +14,7 @@
             "type": "string"
         },
         "stat_time_hour":{
-            "type": ["null", "sting"]
+            "type": ["null", "string"]
         }
     }
 }
