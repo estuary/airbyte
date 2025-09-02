@@ -10,6 +10,7 @@ COPY documentation_url.patch.json ./
 COPY spec.patch.json ./
 COPY spec.map.json ./
 COPY oauth2.patch.json ./
+COPY streams/* ./streams/
 
 LABEL io.airbyte.version=v2
 LABEL io.airbyte.name=airbyte/source-tiktok-marketing
