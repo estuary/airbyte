@@ -254,9 +254,9 @@ mod test {
         let msg = request::Validate {
             name: "materialization".to_string(),
             connector_type: ConnectorType::Image.into(),
-            config_json: "{}".to_string(),
+            config_json: "{}".to_string().into(),
             bindings: vec![request::validate::Binding {
-                resource_config_json: "{}".to_string(),
+                resource_config_json: "{}".to_string().into(),
                 collection: None,
                 field_config_json_map: BTreeMap::new(),
                 backfill: 7,

@@ -7,7 +7,7 @@ use crate::libs::airbyte_catalog::{
     SyncMode,
 };
 use crate::libs::command::READY;
-use crate::libs::stream::{get_airbyte_response, get_decoded_message, stream_airbyte_responses};
+use crate::libs::stream::{get_airbyte_response, stream_airbyte_responses};
 
 use bytes::Bytes;
 use proto_flow::capture::{request, response, Request, Response};
@@ -21,7 +21,6 @@ use validator::Validate;
 
 use futures::{stream, StreamExt};
 use serde_json as sj;
-use serde_json::value::RawValue;
 use std::fs::File;
 use std::io::Write;
 use tempfile::{Builder, TempDir};
@@ -128,10 +127,10 @@ impl AirbyteSourceInterceptor {
             let v = serde_json::to_vec(&Response {
                 spec: Some(response::Spec {
                     protocol: PROTOCOL_VERSION,
-                    config_schema_json: endpoint_spec.to_string(),
+                    config_schema_json: endpoint_spec.to_string().into(),
                     resource_config_schema_json: serde_json::to_string(&create_root_schema::<
                         ResourceSpec,
-                    >())?,
+                    >())?.into(),
                     oauth2: auth_spec
                         .map(|spec| serde_json::from_value(spec))
                         .transpose()?,
@@ -145,12 +144,12 @@ impl AirbyteSourceInterceptor {
         }))
     }
 
-    fn adapt_config_json(config_json: &str) -> Result<sj::Value, Error> {
+    fn adapt_config_json(config_json: &[u8]) -> Result<sj::Value, Error> {
         let spec_map = std::fs::read_to_string(SPEC_MAP_FILE_NAME)
             .ok()
             .map(|p| sj::from_str::<sj::Value>(&p))
             .transpose()?;
-        let mut spec = sj::from_str::<sj::Value>(config_json)?;
+        let mut spec = sj::from_slice::<sj::Value>(config_json)?;
         if let Some(mapping) = spec_map.as_ref() {
             remap(&mut spec, &mapping)?;
         }
@@ -313,9 +312,9 @@ impl AirbyteSourceInterceptor {
 
                 resp.bindings.push(response::discovered::Binding {
                     recommended_name,
-                    resource_config_json: serde_json::to_string(&resource_spec)?,
+                    resource_config_json: serde_json::to_string(&resource_spec)?.into(),
                     key: key.clone(),
-                    document_schema_json: fix_document_schema_keys(doc_schema, key)?.to_string(),
+                    document_schema_json: fix_document_schema_keys(doc_schema, key)?.to_string().into(),
                     disable,
                     resource_path: Vec::new(), // this is deprecated and unused
                     is_fallback_key: false,
@@ -371,7 +370,7 @@ impl AirbyteSourceInterceptor {
             let req = req.as_ref().ok_or(Error::MissingValidateRequest)?;
             let mut resp = response::Validated::default();
             for binding in &req.bindings {
-                let resource: ResourceSpec = serde_json::from_str(&binding.resource_config_json)?;
+                let resource: ResourceSpec = serde_json::from_slice(&binding.resource_config_json)?;
                 resp.bindings.push(response::validated::Binding {
                     resource_path: resource_spec_to_resource_path(&resource),
                 });
@@ -412,7 +411,7 @@ impl AirbyteSourceInterceptor {
         open: request::Open,
     ) -> InterceptorStream {
         Box::pin(stream::once(async move {
-            File::create(state_file_path.clone())?.write_all(&open.state_json.as_bytes())?;
+            File::create(state_file_path.clone())?.write_all(&open.state_json)?;
             let c = open.capture.unwrap();
 
             let config_json = AirbyteSourceInterceptor::adapt_config_json(&c.config_json)?;
@@ -429,7 +428,7 @@ impl AirbyteSourceInterceptor {
             };
 
             for (i, binding) in c.bindings.iter().enumerate() {
-                let resource: ResourceSpec = serde_json::from_str(&binding.resource_config_json)?;
+                let resource: ResourceSpec = serde_json::from_slice(&binding.resource_config_json)?;
 
                 let normalizations = std::fs::read_to_string(format!(
                     "{}/{}{}",
@@ -446,7 +445,7 @@ impl AirbyteSourceInterceptor {
                         SavedBinding {
                             i,
                             normalizations,
-                            doc_schema: serde_json::from_str(&collection.write_schema_json)?,
+                            doc_schema: serde_json::from_slice(&collection.write_schema_json)?
                         },
                     );
                     for p in &collection.projections {
@@ -466,9 +465,7 @@ impl AirbyteSourceInterceptor {
                         stream: airbyte_catalog::Stream {
                             name: resource.stream,
                             namespace: resource.namespace,
-                            json_schema: RawValue::from_string(
-                                collection.write_schema_json.clone(),
-                            )?,
+                            json_schema: serde_json::from_slice(&collection.write_schema_json)?,
                             supported_sync_modes: Some(vec![resource.sync_mode.clone()]),
                             default_cursor_field: None,
                             source_defined_cursor: None,
@@ -519,7 +516,7 @@ impl AirbyteSourceInterceptor {
                 if let Some(state) = message.state {
                     resp.checkpoint = Some(response::Checkpoint {
                         state: Some(ConnectorState {
-                            updated_json: state.data.get().to_string(),
+                            updated_json: state.data.get().to_string().into(),
                             merge_patch: state.merge.unwrap_or(false),
                         }),
                     });
@@ -537,7 +534,7 @@ impl AirbyteSourceInterceptor {
 
                     resp.captured = Some(response::Captured {
                         binding: binding.i as u32,
-                        doc_json: record.data.to_string(),
+                        doc_json: record.data.to_string().into(),
                     });
                     drop(stream_to_binding);
 

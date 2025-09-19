@@ -77,7 +77,7 @@ pub async fn run_airbyte_source_connector(
 
         tracing::debug!("atf: processing operation {:?}", op);
 
-        let config = request.open.as_ref().map(|o| serde_json::from_str::<serde_json::Value>(&o.capture.as_ref().unwrap().config_json));
+        let config = request.open.as_ref().map(|o| serde_json::from_slice::<serde_json::Value>(&o.capture.as_ref().unwrap().config_json));
 
         let args = airbyte_interceptor.adapt_command_args(&op);
         let full_entrypoint = format!("{} \"{}\"", entrypoint, args.join("\" \""));
@@ -181,7 +181,7 @@ pub async fn run_airbyte_source_connector(
                     let mut response = Response::default();
                     response.checkpoint = Some(response::Checkpoint {
                         state: Some(ConnectorState {
-                            updated_json: "{}".to_string(),
+                            updated_json: "{}".to_string().into(),
                             merge_patch: true,
                         }),
                     });
