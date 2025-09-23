@@ -1,0 +1,12 @@
+{
+    "properties": {
+        "create_time": {
+            "type": "string",
+            "format": null
+        },
+        "modify_time": {
+            "type": "string",
+            "format": null
+        }
+    }
+}
