@@ -1,6 +1,6 @@
 {
-    "properties":{
-        "dimensions":{
+    "properties": {
+        "dimensions": {
             "properties": {
                 "stat_time_day": {
                     "type": ["null", "string"],
@@ -12,12 +12,12 @@
                 }
             }
         },
-        "stat_time_day":{
-            "type": "string",
+        "stat_time_day": {
+            "type": ["null", "string"],
             "format": null
         },
-        "stat_time_hour":{
-            "type": ["null", "string"],
+        "stat_time_hour": {
+            "type": "string",
             "format": null
         }
     }

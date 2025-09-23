@@ -1,16 +1,20 @@
 {
     "properties":{
         "schedule_start_time": {
-            "type": "string"
+            "type": "string",
+            "format": null
         },
         "create_time":{
-            "type": "string"
+            "type": "string",
+            "format": null
         },
         "schedule_end_time": {
-            "type": "string"
+            "type": "string",
+            "format": null
         },
         "modify_time": {
-            "type": "string"
+            "type": "string",
+            "format": null
         }
     }
 }

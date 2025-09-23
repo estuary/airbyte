@@ -3,18 +3,22 @@
         "dimensions": {
             "properties": {
                 "stat_time_day": {
-                    "type": ["null", "string"]
+                    "type": ["null", "string"],
+                    "format": null
                 },
                 "stat_time_hour": {
-                    "type": ["null", "string"]
+                    "type": ["null", "string"],
+                    "format": null
                 }
             }
         },
         "stat_time_day":{
-            "type": "string"
+            "type": "string",
+            "format": null
         },
         "stat_time_hour":{
-            "type": ["null", "string"]
+            "type": ["null", "string"],
+            "format": null
         }
     }
 }
