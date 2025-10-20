@@ -38,6 +38,48 @@
           }
         }
       }
-    }
+    },
+      "UrlCustomParameters": {
+        "properties": {
+          "Parameters": {
+            "properties": {
+              "CustomParameter": {
+                "items": {
+                  "properties": {
+                    "key": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    "value": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    }
+                  },
+                  "type": [
+                    "null",
+                    "object"
+                  ]
+                },
+                "type": [
+                  "null",
+                  "array"
+                ]
+              }
+            },
+            "type": [
+              "null",
+              "object"
+            ]
+          }
+        },
+        "type": [
+          "null",
+          "object"
+        ]
+      }
   }
 }
