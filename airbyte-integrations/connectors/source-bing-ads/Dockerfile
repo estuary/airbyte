@@ -11,6 +11,7 @@ COPY spec.patch.json ./
 COPY spec.map.json ./
 COPY oauth2.patch.json ./
 COPY streams/* ./streams/
+COPY omitted_streams.json ./
 
 LABEL io.airbyte.version=v2
 LABEL io.airbyte.name=airbyte/source-bing-ads
