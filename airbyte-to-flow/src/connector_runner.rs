@@ -223,7 +223,7 @@ pub async fn run_airbyte_source_connector(
 
             let run_interval_minutes = std::fs::read_to_string(RUN_INTERVAL_FILE_NAME)
                 .ok()
-                .map(|f| f.parse::<u64>())
+                .map(|f| f.trim().parse::<u64>())
                 .transpose()?;
 
             // Make sure the process stays up for at least run_interval_minutes
