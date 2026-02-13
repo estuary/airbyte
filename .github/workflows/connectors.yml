@@ -131,7 +131,6 @@ jobs:
           - name: source-stripe
           - name: source-amplitude
           - name: source-intercom
-          - name: source-google-ads
           - name: source-salesforce
           - name: source-google-analytics-data-api
           - name: source-linkedin-ads
