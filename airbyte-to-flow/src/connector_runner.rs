@@ -134,13 +134,13 @@ pub async fn run_airbyte_source_connector(
             let _ = ping_sender.try_send(());
         });
 
-        // Four hour timeout on inactivity.
+        // One hour timeout on inactivity.
         let ping_timeout_task = async move {
             loop {
                 tokio::select! {
                     Some(_) = ping_receiver.next() => { continue },
-                    _ = tokio::time::sleep(tokio::time::Duration::from_secs(4 * 3600)) => {
-                        tracing::warn!("Connector has been idle for the past four hours. Restarting...");
+                    _ = tokio::time::sleep(tokio::time::Duration::from_secs(3600)) => {
+                        tracing::warn!("Connector has been idle for the past hour. Restarting...");
                         break
                     }
                 }
