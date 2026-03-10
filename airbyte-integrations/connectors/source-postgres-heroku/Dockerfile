@@ -1,7 +1,7 @@
 ARG AIRBYTE_TO_FLOW_TAG="dev"
 FROM ghcr.io/estuary/airbyte-to-flow:$AIRBYTE_TO_FLOW_TAG as airbyte-to-flow
 
-FROM airbyte/source-postgres:2.0.33
+FROM airbyte/source-postgres:3.0.2
 
 COPY --from=airbyte-to-flow /airbyte-to-flow ./
 ENTRYPOINT ["/airbyte/airbyte-to-flow", "--connector-entrypoint", "/airbyte/base.sh"]
