@@ -8,6 +8,7 @@ ENTRYPOINT ["/airbyte/integration_code/airbyte-to-flow", "--connector-entrypoint
 
 COPY documentation_url.patch.json ./
 COPY spec.patch.json ./
+COPY streams/ ./streams/
 
 LABEL io.airbyte.version=v2
 LABEL io.airbyte.name=airbyte/source-amplitude
