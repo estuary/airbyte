@@ -120,46 +120,35 @@ jobs:
       fail-fast: false
       matrix:
         connector:
-          - name: source-facebook-marketing
-          - name: source-hubspot
           - name: source-google-sheets
           - name: source-exchange-rates
           - name: source-google-analytics-v4
             alias: source-google-analytics-ua
           - name: source-mailchimp
-          - name: source-zendesk-support
           - name: source-stripe
           - name: source-amplitude
           - name: source-intercom
-          - name: source-google-ads
           - name: source-salesforce
           - name: source-google-analytics-data-api
           - name: source-linkedin-ads
           - name: source-bing-ads
           - name: source-github
           - name: source-amazon-ads
-          - name: source-notion
           - name: source-tiktok-marketing
           - name: source-google-search-console
           - name: source-surveymonkey
           - name: source-slack
-          - name: source-airtable
           - name: source-freshdesk
           - name: source-marketo
           - name: source-chargebee
-          - name: source-klaviyo
           - name: source-snapchat-marketing
-          - name: source-recharge
           - name: source-mixpanel
           - name: source-harvest
           - name: source-zendesk-talk
           - name: source-zendesk-chat
-          - name: source-twilio
           - name: source-paypal-transaction
           - name: source-greenhouse
-          - name: source-iterable
           - name: source-sendgrid
-          - name: source-sentry
           - name: source-youtube-analytics
           - name: source-instagram
           - name: source-braintree
@@ -170,7 +159,6 @@ jobs:
           - name: source-woocommerce
           - name: source-amazon-sqs
           - name: source-redshift
-          - name: source-oracle
           - name: source-postgres-heroku
           - name: source-pinterest
           - name: source-aircall
