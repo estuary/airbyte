@@ -1,7 +1,7 @@
 {
     "properties": {
         "date": {
-            "format": "date-time"
+            "format": null
         },
         "length": {
             "type": ["null", "number", "object"],
