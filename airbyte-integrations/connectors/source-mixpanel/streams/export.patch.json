@@ -1,5 +1,10 @@
 {
-"required": [
+  "properties":{
+    "insert_id": {
+      "type": "string"
+    }
+  },
+  "required": [
     "distinct_id",
     "time"
   ],
