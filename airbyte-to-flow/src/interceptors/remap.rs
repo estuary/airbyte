@@ -7,17 +7,16 @@ use crate::errors::Error;
 pub fn remap(doc: &mut serde_json::Value, mapping: &serde_json::Value) -> Result<(), Error> {
     let doc_copy = doc.clone();
     for (key, value) in mapping.as_object().unwrap() {
-        let key_ptr = doc::Pointer::from_str(&key);
+        let key_ptr = json::Pointer::from_str(&key);
         let value_str = value.as_str().ok_or(Error::InvalidMapping(format!(
             "expected {} key to have a string value",
             key
         )))?;
-        let value_ptr = doc::Pointer::from_str(value_str);
+        let value_ptr = json::Pointer::from_str(value_str);
 
         // copy from "value" pointer to "key" pointer
         if key != "" {
-            let location = key_ptr
-                .create_value(doc)
+            let location = json::ptr::create_value(&key_ptr, doc)
                 .ok_or(Error::InvalidMapping(format!(
                     "could not query {} in document",
                     key
@@ -41,9 +40,8 @@ pub fn remap(doc: &mut serde_json::Value, mapping: &serde_json::Value) -> Result
                     "could not split {} to parent and child",
                     value_str
                 )))?;
-        let value_parent_ptr = doc::Pointer::from_str(value_parent_str);
-        let parent = value_parent_ptr
-            .create_value(doc)
+        let value_parent_ptr = json::Pointer::from_str(value_parent_str);
+        let parent = json::ptr::create_value(&value_parent_ptr, doc)
             .ok_or(Error::InvalidMapping(format!(
                 "could not find {} in document",
                 value_parent_str

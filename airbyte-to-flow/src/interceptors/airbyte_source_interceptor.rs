@@ -227,7 +227,7 @@ impl AirbyteSourceInterceptor {
                     .unwrap_or(Vec::new())
                     .iter()
                     .map(|key| {
-                        doc::Pointer::from_iter(key.iter().map(|s| doc::ptr::Token::from_str(&s)))
+                        json::Pointer::from_iter(key.iter().map(|s| json::ptr::Token::from_str(&s)))
                             .to_string()
                     })
                     .collect();

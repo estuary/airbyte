@@ -1,4 +1,4 @@
-use doc::ptr::Pointer;
+use json::ptr::Pointer;
 use schemars::{schema::RootSchema, JsonSchema};
 
 // Create the RootSchema given datatype T.
