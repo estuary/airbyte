@@ -1,9 +1,8 @@
 use crate::interceptors::fix_document_schema::traverse_jsonschema;
 use dateparser::parse_with;
 use chrono::{SecondsFormat, LocalResult, TimeZone, NaiveTime};
-use doc::ptr::Token;
+use json::ptr::Token;
 use json::schema::formats::Format;
-use json::validator::ValidationResult;
 use regex::Regex;
 use serde::Deserialize;
 use serde_json::Map;
@@ -29,7 +28,7 @@ pub fn normalize_doc(
         for entry in entries {
             match entry.normalization {
                 Normalization::DatetimeToDate => {
-                    normalize_datetime_to_date(doc, &doc::Pointer::from_str(&entry.pointer))
+                    normalize_datetime_to_date(doc, &json::Pointer::from_str(&entry.pointer))
                 }
             }
         }
@@ -42,7 +41,7 @@ pub fn automatic_normalizations(
 ) {
     traverse_jsonschema(schema, &mut |map: &mut Map<String, serde_json::Value>, ptr: &str| {
         if map.get("format").and_then(|f| f.as_str()) == Some("date-time") {
-            let pointer = doc::Pointer::from_str(ptr);
+            let pointer = json::Pointer::from_str(ptr);
 
             // traverse_jsonschema writes a /*/ pointer for array items. Here we check for such a star in the pointer
             // and expand it to normalize every item of the array. This implementation is kind of gross. Ideally we would have traverse_jsonschema
@@ -50,7 +49,7 @@ pub fn automatic_normalizations(
             let star_split = pointer.0.rsplit(|item| item == &Token::Property("*".to_string())).collect::<Vec<_>>();
             if star_split.len() > 1 {
                 let property_in_item = &star_split[0][0];
-                let array_parent = doc::Pointer(star_split[1].to_vec());
+                let array_parent = json::Pointer(star_split[1].to_vec());
 
                 array_parent.query(&doc.clone()).map(|val| {
                     val.as_array().map(|arr| {
@@ -75,29 +74,27 @@ pub fn automatic_normalizations(
 // and we will not be able to support seconds unix timestamps after January 1st, 30000
 const UNIX_SECONDS_MAX: i64 = 32503680000;
 
-fn normalize_to_rfc3339(doc: &mut serde_json::Value, ptr: &doc::Pointer) {
+fn normalize_to_rfc3339(doc: &mut serde_json::Value, ptr: &json::Pointer) {
     if let Some(val) = ptr.query(doc) {
         match val.to_owned() {
             serde_json::Value::String(val) => {
-                match Format::DateTime.validate(&val) {
-                    ValidationResult::Valid => (), // Already a valid date
-                    _ => {
-                        let midnight_naive = NaiveTime::from_hms_opt(0, 0, 0).unwrap();
+                if !Format::DateTime.validate(&val) {
+                    // Not already a valid date
+                    let midnight_naive = NaiveTime::from_hms_opt(0, 0, 0).unwrap();
 
-                        let parsed = parse_with(&val, &chrono::offset::Utc, midnight_naive).or_else(|_|
-                            chrono::DateTime::parse_from_str(&val, "%Y-%m-%dT%H:%M:%S%.3f%z").map(|d| d.with_timezone(&chrono::Utc))
-                        ).or_else(|_|
-                            chrono::DateTime::parse_from_str(&val, "%Y-%m-%dT%H:%M:%S%z").map(|d| d.with_timezone(&chrono::Utc))
-                        ).or_else(|_|
-                            chrono::NaiveDateTime::parse_from_str(&val, "%Y-%m-%dT%H:%M:%S%.3f").map(|d| d.and_local_timezone(chrono::Utc).unwrap())
-                        );
-                        if let Ok(parsed) = parsed {
-                            let formatted = parsed.to_rfc3339_opts(SecondsFormat::AutoSi, true);
-                                ptr.create_value(doc)
-                                .map(|v| *v = serde_json::json!(formatted.as_str()));
-                        }
+                    let parsed = parse_with(&val, &chrono::offset::Utc, midnight_naive).or_else(|_|
+                        chrono::DateTime::parse_from_str(&val, "%Y-%m-%dT%H:%M:%S%.3f%z").map(|d| d.with_timezone(&chrono::Utc))
+                    ).or_else(|_|
+                        chrono::DateTime::parse_from_str(&val, "%Y-%m-%dT%H:%M:%S%z").map(|d| d.with_timezone(&chrono::Utc))
+                    ).or_else(|_|
+                        chrono::NaiveDateTime::parse_from_str(&val, "%Y-%m-%dT%H:%M:%S%.3f").map(|d| d.and_local_timezone(chrono::Utc).unwrap())
+                    );
+                    if let Ok(parsed) = parsed {
+                        let formatted = parsed.to_rfc3339_opts(SecondsFormat::AutoSi, true);
+                            json::ptr::create_value(ptr, doc)
+                            .map(|v| *v = serde_json::json!(formatted.as_str()));
                     }
-                };    
+                }
             },
             serde_json::Value::Number(raw_num) => {
                 let v = if raw_num.is_f64() {
@@ -115,7 +112,7 @@ fn normalize_to_rfc3339(doc: &mut serde_json::Value, ptr: &doc::Pointer) {
                 match chrono::Utc.timestamp_opt(seconds_since_epoch, nanoseconds) {
                     LocalResult::Single(dt) => {
                         let formatted = dt.to_rfc3339_opts(SecondsFormat::AutoSi, true);
-                        ptr.create_value(doc)
+                        json::ptr::create_value(ptr, doc)
                         .map(|val| *val = serde_json::json!(formatted.as_str()));
                     },
                     _ => {}
@@ -133,18 +130,16 @@ lazy_static::lazy_static! {
         Regex::new(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}").expect("Is a valid regex");
 }
 
-fn normalize_datetime_to_date(doc: &mut serde_json::Value, ptr: &doc::Pointer) {
+fn normalize_datetime_to_date(doc: &mut serde_json::Value, ptr: &json::Pointer) {
     if let Some(val) = ptr.query(doc) {
         val.to_owned().as_str().map(|v| {
-            match Format::Date.validate(v) {
-                ValidationResult::Valid => (), // Already a valid date
-                _ => {
-                    EXTRACT_DATE_RE.find(v).map(|mat| {
-                        ptr.create_value(doc)
-                            .map(|val| *val = serde_json::json!(mat.as_str()))
-                    });
-                }
-            };
+            if !Format::Date.validate(v) {
+                // Not already a valid date
+                EXTRACT_DATE_RE.find(v).map(|mat| {
+                    json::ptr::create_value(ptr, doc)
+                        .map(|val| *val = serde_json::json!(mat.as_str()))
+                });
+            }
         });
     }
 }

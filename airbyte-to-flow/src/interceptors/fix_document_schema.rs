@@ -1,4 +1,4 @@
-use doc::ptr::Token;
+use json::ptr::Token;
 use json::schema::formats::Format;
 use serde_json::json;
 
@@ -13,13 +13,13 @@ pub fn fix_document_schema_keys(
 ) -> Result<serde_json::Value, Error> {
     let original = doc.clone();
     for key in key_ptrs {
-        let ptr = doc::Pointer::from_str(&key);
+        let ptr = json::Pointer::from_str(&key);
 
-        let mut current = doc::Pointer::empty();
+        let mut current = json::Pointer::empty();
         for token in ptr.iter() {
             match token {
                 // Add "minItems" to arrays to ensure the key is always available at that index
-                doc::ptr::Token::Index(idx) => {
+                json::ptr::Token::Index(idx) => {
                     /* TODO: This code can have ambiguous results when encountering integer-like
                      * properties, and as such has been disabled for now.
                      * See https://github.com/estuary/airbyte/pull/46#discussion_r992250679
@@ -40,7 +40,7 @@ pub fn fix_document_schema_keys(
                     )));
                 }
                 // Add "required" and ensure the property and its parent's type do not include null
-                doc::ptr::Token::Property(prop) => {
+                json::ptr::Token::Property(prop) => {
                     let mut parent_map = doc
                         .pointer_mut(&current.to_string())
                         .unwrap()
@@ -125,13 +125,13 @@ pub fn fix_document_schema_keys(
                     current.push(Token::Property("properties".to_string()));
                     current.push(Token::Property(prop.to_string()));
                 }
-                doc::ptr::Token::NextIndex => {
+                json::ptr::Token::NextIndex => {
                     return Err(Error::InvalidSchema(format!(
                     "cannot use JSONPointer next index pointer /-/ in key pointer at {:?} in {:?}",
                     current, original
                 )))
                 }
-                doc::ptr::Token::NextProperty => {
+                json::ptr::Token::NextProperty => {
                     return Err(Error::InvalidSchema(format!(
                         "cannot use JSONPointer NextToken(/*/) in key pointer at {:?} in {:?}",
                         current, original
