@@ -52,6 +52,15 @@ const STREAM_NORMALIZE_SUFFIX: &str = ".normalize.json";
 const SELECTED_STREAMS_FILE_NAME: &str = "selected_streams.json";
 const OMITTED_STREAMS_FILE_NAME: &str = "omitted_streams.json";
 
+// Optional per-connector env var declaring the `--state` format the
+// connector expects, set in the connector's Dockerfile. When it equals
+// "per_stream", the persisted `{stream_name: stream_state}` state is converted
+// into a list of per-stream AirbyteStateMessages before being handed to the
+// connector. Unset (the default), state is written verbatim, preserving behavior
+// for legacy/global-state connectors.
+const STATE_FORMAT_ENV_VAR: &str = "AIRBYTE_TO_FLOW_STATE_FORMAT";
+const STATE_FORMAT_PER_STREAM: &str = "per_stream";
+
 // SavedBinding records the binding index and applicable normalizations obtained from a Pull
 // request.
 struct SavedBinding {
@@ -411,7 +420,17 @@ impl AirbyteSourceInterceptor {
         open: request::Open,
     ) -> InterceptorStream {
         Box::pin(stream::once(async move {
-            File::create(state_file_path.clone())?.write_all(&open.state_json)?;
+            // Connectors that expect per-stream list state opt in via STATE_FORMAT_ENV_VAR.
+            let wants_per_stream = std::env::var(STATE_FORMAT_ENV_VAR)
+                .map(|v| v == STATE_FORMAT_PER_STREAM)
+                .unwrap_or(false);
+
+            let mut state_file = File::create(state_file_path.clone())?;
+            if wants_per_stream {
+                state_file.write_all(&convert_state_for_connector(&open.state_json)?)?;
+            } else {
+                state_file.write_all(&open.state_json)?;
+            }
             let c = open.capture.unwrap();
 
             let config_json = AirbyteSourceInterceptor::adapt_config_json(&c.config_json)?;
@@ -514,10 +533,11 @@ impl AirbyteSourceInterceptor {
 
                 let mut resp = Response::default();
                 if let Some(state) = message.state {
+                    let (updated_json, merge_patch) = state_to_checkpoint(state)?;
                     resp.checkpoint = Some(response::Checkpoint {
                         state: Some(ConnectorState {
-                            updated_json: state.data.get().to_string().into(),
-                            merge_patch: state.merge.unwrap_or(false),
+                            updated_json: updated_json.into(),
+                            merge_patch,
                         }),
                     });
 
@@ -709,6 +729,95 @@ fn stream_to_recommended_name(stream: &str) -> String {
         .join("/")
 }
 
+/// Translates a connector state message into the `(updated_json, merge_patch)`
+/// pair persisted as a Flow ConnectorState checkpoint.
+///
+/// A LEGACY-type `data` blob is handled first and forwarded verbatim with its merge
+/// flag. Every connector emitting `data` (which covers connectors on older CDK versions)
+/// follows this path.
+///
+/// Connectors that emit STREAM-type per-stream state reach the
+/// `stream` branch. Their state is persisted as a `{stream_name: stream_state}`
+/// document reduced via RFC 7396 JSON merge patch, so each stream's checkpoint
+/// updates only its own key and the streams' states accumulate into a single
+/// object. That object is the shape `convert_state_for_connector` reads back,
+/// so state round-trips.
+///
+/// Note: per-stream state is keyed by stream name only; a namespace, if present,
+/// is dropped. The connectors this targets do not use namespaces, and the
+/// `{stream_name: stream_state}` object form has no notion of one.
+fn state_to_checkpoint(state: airbyte_catalog::State) -> Result<(String, bool), Error> {
+    if let Some(data) = state.data {
+        Ok((data.get().to_string(), state.merge.unwrap_or(false)))
+    } else if let Some(stream_state) = state.stream {
+        let inner: sj::Value = match stream_state.stream_state {
+            Some(raw) => sj::from_str(raw.get())?,
+            None => sj::Value::Object(sj::Map::new()),
+        };
+        let mut doc = sj::Map::new();
+        doc.insert(stream_state.stream_descriptor.name, inner);
+        Ok((sj::to_string(&sj::Value::Object(doc))?, true))
+    } else {
+        // Unrecognized state shape (e.g. GLOBAL/global state used by CDC connectors),
+        // which we can't round-trip through the `{stream_name: stream_state}` object
+        // form. Emit an empty merge patch so the capture continues without persisting
+        // meaningless state, rather than erroring. Log the message type and any
+        // `global` payload so we can tell what it was and whether to add support.
+        tracing::warn!(
+            state_type = state.state_type.as_deref().unwrap_or("<unknown>"),
+            global = state.global.as_ref().map(|g| g.get()).unwrap_or("null"),
+            "airbyte-to-flow received an unsupported Airbyte state message; state was not persisted for this checkpoint",
+        );
+        Ok(("{}".to_string(), true))
+    }
+}
+
+/// Converts the persisted Flow connector state into the `--state` file
+/// content expected by the connector.
+///
+/// Flow persists Airbyte state as a JSON object keyed by stream name
+/// (`{stream_name: stream_state}`). This is both the shape produced by
+/// `adapt_pull_response_stream` for STREAM-type connectors and the conventional
+/// LEGACY format emitted by older-CDK connectors. Modern-CDK connectors
+/// require the `--state` file to contain a JSON list of AirbyteStateMessages;
+/// passing the object form makes their `read_state` iterate the object's keys and
+/// fail with `"<stream name>" is not of type "object"`.
+///
+/// This converts the object form into the per-stream list the connector expects.
+/// A value that is already a list is passed through unchanged (so connectors that
+/// round-trip the list form directly keep working), and empty/absent/`null` state
+/// becomes an empty list.
+fn convert_state_for_connector(state_json: &[u8]) -> Result<Vec<u8>, Error> {
+    let state_value: sj::Value = if state_json.is_empty() {
+        sj::Value::Object(sj::Map::new())
+    } else {
+        sj::from_slice(state_json)?
+    };
+
+    let converted = match state_value {
+        // Already a list of AirbyteStateMessages: pass through unchanged.
+        sj::Value::Array(_) => state_value,
+        // `{stream_name: stream_state}` -> [{type: STREAM, stream: {...}}, ...]
+        sj::Value::Object(map) => sj::Value::Array(
+            map.into_iter()
+                .map(|(name, stream_state)| {
+                    sj::json!({
+                        "type": "STREAM",
+                        "stream": {
+                            "stream_descriptor": { "name": name },
+                            "stream_state": stream_state,
+                        }
+                    })
+                })
+                .collect(),
+        ),
+        // Anything else (e.g. `null`): treat as no state.
+        _ => sj::Value::Array(Vec::new()),
+    };
+
+    Ok(sj::to_vec(&converted)?)
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -740,5 +849,161 @@ mod test {
         };
         let expected = vec!["toe".to_string(), "foo".to_string()];
         assert_eq!(&expected, &resource_spec_to_resource_path(&spec_b));
+    }
+
+    // Parses a `--state` file's bytes back into a value for assertions.
+    fn parse(bytes: Vec<u8>) -> sj::Value {
+        sj::from_slice(&bytes).unwrap()
+    }
+
+    #[test]
+    fn test_convert_state_legacy_dict_to_per_stream_list() {
+        // The legacy/canonical Flow state for an amazon-ads capture: a JSON object
+        // keyed by stream name. The modern CDK requires this to be a list of
+        // AirbyteStateMessages, otherwise read_state iterates the keys and fails
+        // with `"<stream name>" is not of type "object"`.
+        let legacy = br#"{
+            "sponsored_brands_report_stream": {"12345": "2024-01-01"},
+            "sponsored_products_campaigns": {"cursor": "2024-02-02"}
+        }"#;
+
+        let got = parse(convert_state_for_connector(legacy).unwrap());
+
+        let expected = sj::json!([
+            {
+                "type": "STREAM",
+                "stream": {
+                    "stream_descriptor": {"name": "sponsored_brands_report_stream"},
+                    "stream_state": {"12345": "2024-01-01"}
+                }
+            },
+            {
+                "type": "STREAM",
+                "stream": {
+                    "stream_descriptor": {"name": "sponsored_products_campaigns"},
+                    "stream_state": {"cursor": "2024-02-02"}
+                }
+            }
+        ]);
+        assert_eq!(got, expected);
+    }
+
+    #[test]
+    fn test_convert_state_empty_and_passthrough() {
+        // Empty input -> empty list (a fresh capture must not crash read_state).
+        assert_eq!(parse(convert_state_for_connector(b"").unwrap()), sj::json!([]));
+        assert_eq!(parse(convert_state_for_connector(b"{}").unwrap()), sj::json!([]));
+        // `null` -> empty list.
+        assert_eq!(parse(convert_state_for_connector(b"null").unwrap()), sj::json!([]));
+        // A list is already in the connector's expected form and is passed through.
+        let list = br#"[{"type":"STREAM","stream":{"stream_descriptor":{"name":"s"},"stream_state":{"c":1}}}]"#;
+        assert_eq!(
+            parse(convert_state_for_connector(list).unwrap()),
+            parse(list.to_vec())
+        );
+    }
+
+    #[test]
+    fn test_state_to_checkpoint_per_stream() {
+        // A modern per-stream STATE message is persisted as `{name: stream_state}`
+        // with merge_patch=true, so each stream updates only its own key.
+        let state: airbyte_catalog::State = sj::from_str(
+            r#"{"type":"STREAM","stream":{"stream_descriptor":{"name":"sponsored_brands_v3_report_stream"},"stream_state":{"reportDate":"2024-03-03"}}}"#,
+        )
+        .unwrap();
+
+        let (updated_json, merge_patch) = state_to_checkpoint(state).unwrap();
+        assert!(merge_patch);
+        assert_eq!(
+            sj::from_str::<sj::Value>(&updated_json).unwrap(),
+            sj::json!({"sponsored_brands_v3_report_stream": {"reportDate": "2024-03-03"}})
+        );
+    }
+
+    #[test]
+    fn test_state_to_checkpoint_legacy_data() {
+        // A legacy `data` blob is forwarded as-is, preserving its merge flag.
+        let state: airbyte_catalog::State =
+            sj::from_str(r#"{"data":{"some":"state"},"merge":true}"#).unwrap();
+        let (updated_json, merge_patch) = state_to_checkpoint(state).unwrap();
+        assert!(merge_patch);
+        assert_eq!(
+            sj::from_str::<sj::Value>(&updated_json).unwrap(),
+            sj::json!({"some": "state"})
+        );
+
+        // Without a merge flag, legacy state defaults to a full replacement.
+        let state: airbyte_catalog::State =
+            sj::from_str(r#"{"data":{"some":"state"}}"#).unwrap();
+        let (_, merge_patch) = state_to_checkpoint(state).unwrap();
+        assert!(!merge_patch);
+    }
+
+    #[test]
+    fn test_state_to_checkpoint_prefers_data_when_both_present() {
+        // Some connectors emit both a legacy `data` blob and per-stream `stream`
+        // for backwards compatibility. `data` must win so these connectors keep
+        // their pre-existing behavior unchanged.
+        let state: airbyte_catalog::State = sj::from_str(
+            r#"{"type":"STREAM","data":{"legacy":"blob"},"stream":{"stream_descriptor":{"name":"s"},"stream_state":{"c":1}}}"#,
+        )
+        .unwrap();
+        let (updated_json, merge_patch) = state_to_checkpoint(state).unwrap();
+        assert!(!merge_patch);
+        assert_eq!(
+            sj::from_str::<sj::Value>(&updated_json).unwrap(),
+            sj::json!({"legacy": "blob"})
+        );
+    }
+
+    #[test]
+    fn test_state_to_checkpoint_unrecognized_is_noop() {
+        // Unrecognized state (e.g. GLOBAL) becomes an empty merge patch (a no-op)
+        // rather than erroring the capture.
+        let state: airbyte_catalog::State = sj::from_str(
+            r#"{"type":"GLOBAL","global":{"shared_state":{"x":1},"stream_states":[]}}"#,
+        )
+        .unwrap();
+
+        // The fields we don't consume are captured so the warning log can report
+        // what the unsupported message actually was.
+        assert_eq!(state.state_type.as_deref(), Some("GLOBAL"));
+        assert_eq!(
+            sj::from_str::<sj::Value>(state.global.as_ref().unwrap().get()).unwrap(),
+            sj::json!({"shared_state":{"x":1},"stream_states":[]})
+        );
+
+        let (updated_json, merge_patch) = state_to_checkpoint(state).unwrap();
+        assert!(merge_patch);
+        assert_eq!(sj::from_str::<sj::Value>(&updated_json).unwrap(), sj::json!({}));
+    }
+
+    #[test]
+    fn test_state_round_trips_through_both_directions() {
+        // Full cycle: a modern per-stream checkpoint is persisted, then read back
+        // out to the connector. The stream's cursor must survive intact.
+        let state: airbyte_catalog::State = sj::from_str(
+            r#"{"type":"STREAM","stream":{"stream_descriptor":{"name":"sponsored_products_campaigns"},"stream_state":{"cursor":"2024-04-04"}}}"#,
+        )
+        .unwrap();
+
+        // Outbound: connector -> Flow ConnectorState.
+        let (persisted, _) = state_to_checkpoint(state).unwrap();
+
+        // Inbound: the persisted Flow state -> connector `--state` file.
+        let for_connector = parse(convert_state_for_connector(persisted.as_bytes()).unwrap());
+
+        assert_eq!(
+            for_connector,
+            sj::json!([
+                {
+                    "type": "STREAM",
+                    "stream": {
+                        "stream_descriptor": {"name": "sponsored_products_campaigns"},
+                        "stream_state": {"cursor": "2024-04-04"}
+                    }
+                }
+            ])
+        );
     }
 }

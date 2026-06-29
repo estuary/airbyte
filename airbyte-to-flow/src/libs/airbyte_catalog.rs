@@ -184,17 +184,54 @@ impl Trace {
     }
 }
 
+// StreamDescriptor identifies the stream that a per-stream state belongs to.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "snake_case")]
+pub struct StreamDescriptor {
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
+}
+
+// AirbyteStreamState is the payload of a modern (per-stream) AirbyteStateMessage,
+// i.e. one whose `type` is STREAM.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "snake_case")]
+pub struct AirbyteStreamState {
+    pub stream_descriptor: StreamDescriptor,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stream_state: Option<Box<RawValue>>,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub struct State {
     // Data is the actual state associated with the ingestion. This must be a JSON _Object_ in order
     // to comply with the airbyte specification.
-    pub data: Box<RawValue>,
+    //
+    // This is the LEGACY state type (an opaque blob) emitted by older-CDK connectors.
+    // The LEGACY format has been deprecated by Airbyte in favor of STREAM and GLOBAL;
+    // modern connectors instead emit per-stream state via `stream` (see below) and
+    // omit `data`, so this is optional.
+    // See https://docs.airbyte.com/platform/understanding-airbyte/airbyte-protocol#state-types
+    pub data: Option<Box<RawValue>>,
+
+    // Stream holds the per-stream state of a STREAM-type AirbyteStateMessage, emitted
+    // by modern-CDK connectors. Exactly one of `data` or `stream` is expected to be
+    // set on any given state message.
+    pub stream: Option<AirbyteStreamState>,
 
     // Merge indicates that Data is an RFC 7396 JSON Merge Patch, and should
     // be be reduced into the previous state accordingly.
     #[serde(alias = "estuary.dev/merge")]
     pub merge: Option<bool>,
+
+    // The following fields are not used to translate state, but are captured so
+    // that state messages we don't otherwise handle (e.g. GLOBAL/global state used
+    // by CDC connectors) can be surfaced in logs for diagnosis.
+    #[serde(rename = "type")]
+    pub state_type: Option<String>,
+    pub global: Option<Box<RawValue>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
