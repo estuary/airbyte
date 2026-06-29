@@ -1,4 +1,6 @@
 {
+    "type": "object",
+    "required": ["adGroupId"],
     "properties": {
       "adGroupId": {
         "type": "integer"
