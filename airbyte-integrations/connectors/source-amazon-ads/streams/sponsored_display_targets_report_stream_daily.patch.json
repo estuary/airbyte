@@ -1,0 +1,11 @@
+{
+    "date": null,
+    "properties": {
+        "date": {
+            "type": [
+                "null",
+                "string"
+            ]
+        }
+    }
+}
