@@ -51,6 +51,7 @@
                         "refresh_token": {
                             "type": "string",
                             "title": "Refresh token",
+                            "airbyte_secret": true,
                             "description": "The key to refresh the expired access token."
                         }
                     }
