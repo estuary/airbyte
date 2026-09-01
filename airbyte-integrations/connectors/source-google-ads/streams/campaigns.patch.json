@@ -1,7 +1,0 @@
-{
-    "properties": {
-        "segments.hour": {
-            "type": "integer"
-        }
-    }
-}
